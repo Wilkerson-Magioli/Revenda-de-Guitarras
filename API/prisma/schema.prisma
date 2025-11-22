@@ -1,0 +1,87 @@
+// prisma/schema.prisma
+generator client { 
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Marca {
+  id       Int        @id @default(autoincrement())
+  nome     String     @unique
+  guitarra Guitarra[]
+}
+
+model Guitarra {
+  id         Int       @id @default(autoincrement())
+  modelo     String
+  preco      Decimal   @db.Decimal(10, 2)
+  foto       String
+  acessorio  String?
+  destaque   Boolean   @default(true)
+  ativo      Boolean   @default(true)   // << NOVO (seguro: default true)
+
+  // FKs
+  marcaId    Int
+  adminId    Int?
+
+  // Relações
+  marca      Marca     @relation(fields: [marcaId], references: [id])
+  admin      Admin?    @relation(fields: [adminId], references: [id])
+  proposta   Proposta[]
+}
+
+model Cliente {
+  id        Int        @id @default(autoincrement())
+  nome      String
+  email     String     @unique
+  telefone  String?
+  cidade    String?
+  senha     String
+  propostas Proposta[]
+}
+
+model Proposta {
+  id         Int       @id @default(autoincrement())
+  descricao  String
+  resposta   String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // FKs
+  clienteId  Int
+  guitarraId Int
+  adminId    Int?
+
+  // Relações
+  cliente    Cliente   @relation(fields: [clienteId], references: [id])
+  guitarra   Guitarra  @relation(fields: [guitarraId], references: [id])
+  admin      Admin?    @relation(fields: [adminId], references: [id])
+}
+
+model Admin {
+  id        Int        @id @default(autoincrement())
+  nome      String
+  email     String     @unique
+  senha     String
+  nivel     Int        @db.SmallInt @default(2) // já existia
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt @default(now())
+
+  guitarra  Guitarra[]
+  proposta  Proposta[]
+  logs      Log[]                       // << NOVO: ligação com Log
+}
+
+model Log {
+  id         Int       @id @default(autoincrement())
+  acao       String
+  tabela     String
+  registroId Int
+  adminId    Int?                              // << NOVO: quem fez
+  createdAt  DateTime  @default(now())
+
+  admin      Admin?    @relation(fields: [adminId], references: [id]) // << NOVO
+}
